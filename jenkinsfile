@@ -1,0 +1,56 @@
+pipeline {
+    agent any  // Utilise un agent disponible pour exécuter le pipeline
+
+    environment {
+        // Définir une variable d'environnement pour l'image Docker
+        DOCKER_IMAGE = 'flask-app:latest'
+    }
+
+    stages {
+        stage('Cloner le Dépôt') {
+            steps {
+                // Cloner le dépôt Git contenant le projet
+                git 'https://github.com/SelimBenAli/DevOps.git'
+            }
+        }
+
+        stage('Construire l’Application avec Docker') {
+            steps {
+                script {
+                    // Construire l'image Docker en utilisant le Dockerfile du projet
+                    echo 'Construction de l\'image Docker...'
+                    sh 'docker build -t $DOCKER_IMAGE .'
+                }
+            }
+        }
+
+        stage('Exécuter les Tests') {
+            steps {
+                script {
+                    // Lancer les tests dans un conteneur Docker
+                    echo 'Exécution des tests unitaires...'
+                    sh 'docker run --rm $DOCKER_IMAGE pytest tests/' // Remplacez "tests/" par votre répertoire de tests
+                }
+            }
+        }
+
+        stage('Archiver les Résultats') {
+            steps {
+                // Archive les fichiers de résultats de test (si disponibles)
+                archiveArtifacts artifacts: '**/test-results.xml', allowEmptyArchive: true
+            }
+        }
+    }
+
+    post {
+        always {
+            echo 'Pipeline terminé.'
+        }
+        success {
+            echo 'Le pipeline a été exécuté avec succès.'
+        }
+        failure {
+            echo 'Le pipeline a échoué.'
+        }
+    }
+}
